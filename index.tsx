@@ -71,6 +71,7 @@ export default class InstagramEmbed extends React.Component<Props, State> {
     fetch(`https://www.instagram.com/p/${id}/embed/captioned/`)
       .then(response => response.text())
       .then(responseText => {
+        console.log("instagram", responseText);
         // The image from there not working ATM
         // let avatarUrl = "";
         // let avatarRegex = /class=\"Avatar\"[^>]*>.*<img.*src=\"([^"]+)\".*<\/a>/s;
@@ -118,13 +119,16 @@ export default class InstagramEmbed extends React.Component<Props, State> {
           comments: commentsMatch ? commentsMatch[1].replace("view all", "").trim() : null,
         });
       })
-      .catch(error => { });
+      .catch(error => {
+        console.log("instagram", error);
+      });
   };
 
   _fetchAvatar = (url) => {
     fetch(url).then(r => r.text()).then(r => {
       const property = 'og:image" content="';
       const propertyIndex = r.indexOf(property);
+      console.log("instagram avatar", url, r, propertyIndex);
       if (propertyIndex > -1) {
         let avatarUrl = r.substring(r.indexOf(property) + property.length);
         avatarUrl = avatarUrl.substring(0, avatarUrl.indexOf('"'));
@@ -137,9 +141,13 @@ export default class InstagramEmbed extends React.Component<Props, State> {
 
   componentDidMount = () => {
     const { id } = this.props;
-    fetch(`https://api.instagram.com/oembed/?url=http://instagr.am/p/${id}/`)
-      .then(response => response.json())
+    fetch(`https://api.instagram.com/oembed/?url=https://www.instagram.com/p/${id}/`)
+      .then(response => {
+        console.log("instagram then 1", response);
+        return response.json();
+      })
       .then(responseJson => {
+        console.log("instagram then 2", responseJson);
         if (this.props.showStats)
           this._fetchComplementaryData(id);
         if (this.props.showAvatar)
@@ -147,12 +155,13 @@ export default class InstagramEmbed extends React.Component<Props, State> {
         this.setState({ response: responseJson });
       })
       .catch(error => {
+        console.log("instagram err", error);
         this.setState({ response: null });
       });
   };
 
   render() {
-    let { style, showAvatar,  showStats, avatarStyle, nameStyle, thumbnailStyle } = this.props;
+    let { style, showAvatar, showStats, avatarStyle, nameStyle, thumbnailStyle } = this.props;
     const {
       response,
       height,
@@ -166,7 +175,7 @@ export default class InstagramEmbed extends React.Component<Props, State> {
     if (!response) {
       return <View style={[{ width: 0, height: 0 }, style]} />;
     }
-
+    console.log("instagram", avatar);
     return (
       <View
         style={[
@@ -179,55 +188,62 @@ export default class InstagramEmbed extends React.Component<Props, State> {
       >
         <View onLayout={this._onLayout}>
           {showAvatar && <View style={styles.headerContainer}>
-            {avatar && (
+            {(
               <Image
-                source={{
-                  uri: avatar,
-                }}
+                source={require("./assets/images/boat-logo.jpg")}
                 style={[styles.avatar, avatarStyle]}
               />
             )}
-            <Text style={[styles.author, nameStyle]}>{response.author_name}</Text>
+            <Text style={[styles.author, nameStyle]}>{`@${response.author_name}`}</Text>
           </View>}
           {(response.thumbnail_url || thumbnail) ? (
             <Image
-              source={{ uri: thumbnail ? thumbnail : response.thumbnail_url }}
+              source={{ uri: response.thumbnail_url }}
               style={[{
-                height:
-                  response.thumbnail_height * width / response.thumbnail_width,
+                height: 500,
               }, thumbnailStyle]}
             />
           ) : <></>}
           <View style={{ flexDirection: 'column', margin: 8 }}>
             {showStats && <View style={styles.statsContainer}>
               {/* {!!views && (
+                 <View style={{ flexDirection: 'row' }}>
+                   <Image
+                     source={require('./assets/images/icon_views.png')}
+                     style={styles.statIcon}
+                   />
+                   <Text style={styles.statLabel}>{views} views</Text>
+                 </View>
+               )} */}
+              {(
                 <View style={{ flexDirection: 'row' }}>
                   <Image
-                    source={require('./assets/images/icon_views.png')}
+                    source={require('./assets/images/ig_like.png')}
                     style={styles.statIcon}
                   />
-                  <Text style={styles.statLabel}>{views} views</Text>
-                </View>
-              )} */}
-              {!!likes && (
-                <View style={{ flexDirection: 'row' }}>
-                  <Image
-                    source={require('./assets/images/icon_likes.png')}
-                    style={styles.statIcon}
-                  />
-                  <Text style={styles.statLabel}>{likes} likes</Text>
+                  {/* <Text style={styles.statLabel}>{likes} likes</Text> */}
                 </View>
               )}
-              {!!comments && (
+              {(
                 <View style={{ flexDirection: 'row' }}>
                   <Image
-                    source={require('./assets/images/icon_comments.png')}
+                    source={require('./assets/images/ig_com.png')}
                     style={styles.statIcon}
                   />
-                  <Text style={styles.statLabel}>{comments} comments</Text>
+                  {/* <Text style={styles.statLabel}>{likes} likes</Text> */}
+                </View>
+              )}
+              {(
+                <View style={{ flexDirection: 'row' }}>
+                  <Image
+                    source={require('./assets/images/ig_share.png')}
+                    style={styles.statIcon}
+                  />
+                  {/* <Text style={styles.statLabel}>{comments} comments</Text> */}
                 </View>
               )}
             </View>}
+            {likes !== null && likes !== undefined && <Text style={styles.statLabel}>{likes} likes</Text>}
             {this.renderCaption()}
           </View>
         </View>
